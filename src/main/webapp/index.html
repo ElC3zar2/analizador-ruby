@@ -1,10 +1,74 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>Start Page</title>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    </head>
-    <body>
-        <h1>Hello World!</h1>
-    </body>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Analizador de Ruby</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/app.js" defer></script>
+</head>
+<body>
+    <div class="app-shell">
+        <header class="page-header">
+            <div class="brand-mark" aria-hidden="true">◆</div>
+            <div>
+                <p class="eyebrow">HERRAMIENTAS DE LENGUAJE</p>
+                <h1>Analizador de Ruby</h1>
+                <p class="subtitle">Análisis léxico, sintáctico y semántico</p>
+            </div>
+            <span class="phase-badge">Fase 1 · Interfaz</span>
+        </header>
+        <main>
+            <section class="panel upload-panel" aria-labelledby="upload-title">
+                <div class="section-heading">
+                    <h2 id="upload-title"><span class="step">01</span> Archivo de origen</h2>
+                    <span class="section-note">Ruby / Texto</span>
+                </div>
+                <div class="drop-zone" id="drop-zone">
+                    <span class="upload-symbol" aria-hidden="true">↑</span>
+                    <h3>Arrastra tu archivo .rb o .txt aquí</h3>
+                    <p>o selecciona un archivo</p>
+                    <input class="file-input" id="source-file" type="file" accept=".rb,.txt" aria-label="Seleccionar archivo Ruby o texto" aria-describedby="file-formats upload-note">
+                    <button class="button secondary" id="select-file" type="button">Seleccionar archivo</button>
+                    <p class="small" id="file-formats">Formatos permitidos: .rb y .txt</p>
+                </div>
+                <div class="file-info" aria-label="Información del archivo">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    <span id="file-name">Ningún archivo seleccionado</span>
+                </div>
+                <p class="small" id="upload-note">La carga y lectura de archivos estarán disponibles en una fase posterior.</p>
+            </section>
+            <section class="panel editor-panel" aria-labelledby="editor-title">
+                <div class="section-heading">
+                    <h2 id="editor-title"><span class="step">02</span> Código fuente</h2>
+                    <span class="language-badge">Ruby</span>
+                </div>
+                <label class="visually-hidden" for="source-code">Código Ruby</label>
+                <textarea id="source-code" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="# Tu código Ruby aparecerá aquí" aria-describedby="editor-note"></textarea>
+                <div class="editor-footer"><span id="editor-note">Puedes escribir código manualmente.</span><span>UTF-8</span></div>
+            </section>
+            <section class="panel analysis-panel" aria-labelledby="analysis-title">
+                <h2 id="analysis-title"><span class="step">03</span> Configura el análisis</h2>
+                <div class="analysis-controls">
+                    <fieldset>
+                        <legend>Tipo de análisis</legend>
+                        <div class="analysis-options">
+                            <label class="option"><input type="radio" name="analysis-type" value="lexico"><span>Léxico</span></label>
+                            <label class="option"><input type="radio" name="analysis-type" value="sintactico"><span>Sintáctico</span></label>
+                            <label class="option"><input type="radio" name="analysis-type" value="semantico"><span>Semántico</span></label>
+                            <label class="option"><input type="radio" name="analysis-type" value="todo" checked><span>Todo</span></label>
+                        </div>
+                    </fieldset>
+                    <button class="button primary" type="button" disabled aria-describedby="analysis-note">Analizar <span aria-hidden="true">→</span></button>
+                </div>
+                <p class="small" id="analysis-note">El análisis estará disponible cuando se active la integración con el backend.</p>
+            </section>
+            <section class="panel results-panel" aria-labelledby="results-title">
+                <div class="section-heading"><h2 id="results-title">Resultados</h2><span class="section-note">Sin análisis</span></div>
+                <div class="empty-results"><span class="code-symbol" aria-hidden="true">&lt; / &gt;</span><p>Los resultados del análisis aparecerán aquí.</p></div>
+            </section>
+        </main>
+        <footer class="page-footer">Analizador de Ruby <span>Proyecto de Autómatas y Lenguajes Formales</span></footer>
+    </div>
+</body>
 </html>
