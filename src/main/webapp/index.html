@@ -16,7 +16,7 @@
                 <h1>Analizador de Ruby</h1>
                 <p class="subtitle">Análisis léxico, sintáctico y semántico</p>
             </div>
-            <span class="phase-badge">Fase 1 · Interfaz</span>
+            <span class="phase-badge">Fase 2 · Carga de archivos</span>
         </header>
         <main>
             <section class="panel upload-panel" aria-labelledby="upload-title">
@@ -32,11 +32,12 @@
                     <button class="button secondary" id="select-file" type="button">Seleccionar archivo</button>
                     <p class="small" id="file-formats">Formatos permitidos: .rb y .txt</p>
                 </div>
-                <div class="file-info" aria-label="Información del archivo">
+                <div class="file-info" id="file-info" aria-label="Información del archivo" aria-live="polite" aria-atomic="true">
                     <span class="status-dot" aria-hidden="true"></span>
                     <span id="file-name">Ningún archivo seleccionado</span>
                 </div>
-                <p class="small" id="upload-note">La carga y lectura de archivos estarán disponibles en una fase posterior.</p>
+                <p class="small" id="upload-note">Carga un archivo para editar su contenido. El archivo original no se modifica.</p>
+                <p class="upload-message" id="upload-message" role="status" aria-live="polite" aria-atomic="true"></p>
             </section>
             <section class="panel editor-panel" aria-labelledby="editor-title">
                 <div class="section-heading">

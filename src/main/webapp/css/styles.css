@@ -38,7 +38,14 @@ h3 { font-size: 16px; font-weight: 500; margin: 12px 0 4px; }
 .file-input, .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); border: 0; white-space: nowrap; }
 .drop-zone:focus-within { border-color: var(--ruby); }
 .file-info { display: flex; align-items: center; gap: 9px; padding-top: 16px; color: var(--muted); font-size: 13px; }
-.status-dot { width: 6px; height: 6px; border-radius: 50%; background: #757b8d; }
+.file-info span:last-child { overflow-wrap: anywhere; min-width: 0; }
+.file-info.is-loaded { color: var(--text); }
+.status-dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: #757b8d; }
+.file-info.is-loaded .status-dot { background: #85d7aa; }
+.upload-message { margin: 12px 0 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.upload-message:empty { margin: 0; }
+.upload-message[data-state="error"] { color: #ffa0ae; }
+.upload-message[data-state="success"] { color: #85d7aa; }
 .upload-panel > .small { margin-bottom: 0; }
 .language-badge { font: 12px Consolas, monospace; color: var(--ruby); background: #30202a; padding: 3px 10px; border-radius: 5px; }
 textarea { display: block; width: 100%; min-height: 230px; resize: vertical; padding: 20px; border: 1px solid var(--border); border-radius: 8px; background: #101218; color: var(--text); font: 14px/1.8 Consolas, "Courier New", monospace; tab-size: 2; }
