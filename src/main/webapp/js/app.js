@@ -120,6 +120,8 @@ document.addEventListener('drop', (event) => {
     dropZone.classList.remove('is-dragging');
 });
 
+const clearButton = document.getElementById('clear-button');
+const resultsPanel = document.getElementById('results-panel');
 const analyzeButton = document.getElementById('analyze-button');
 const analysisMessage = document.getElementById('analysis-message');
 const resultsPlaceholder = document.getElementById('results-placeholder');
@@ -133,11 +135,13 @@ const resultTotal = document.getElementById('result-total');
 const resultDetails = document.getElementById('result-details');
 const detailSections = {};
 const analysisOptions = document.querySelectorAll('input[name="analysis-type"]');
-// Conserva JSON completo y el código al que corresponde para la futura vista detallada.
+// Conserva el resultado completo y el código al que corresponde.
 const analysisState = { result: null, code: null, type: 'todo' };
 let analysisPending = false;
+let analysisVersion = 0;
 
 function updateAnalyzeButton() {
+    resultsPanel.setAttribute('aria-busy', String(analysisPending));
     analyzeButton.disabled = analysisPending || editor.value.trim().length === 0;
     analyzeButton.textContent = analysisPending ? 'Analizando…' : 'Analizar';
 }
@@ -185,6 +189,7 @@ analyzeButton.addEventListener('click', () => {
         return;
     }
     const codigoRuby = editor.value;
+    const version = ++analysisVersion;
     analysisPending = true;
     analysisState.result = null;
     analysisState.code = null;
@@ -196,14 +201,16 @@ analyzeButton.addEventListener('click', () => {
     updateAnalyzeButton();
 
     function finishAnalysis() {
+        if (version !== analysisVersion) { return; }
         analysisPending = false;
         updateAnalyzeButton();
     }
     function analysisFailed() {
+        if (version !== analysisVersion) { return; }
         analysisState.result = null;
         analysisState.code = null;
         analysisSummary.hidden = true;
-    clearDetails();
+        clearDetails();
         resultsPlaceholder.hidden = true;
         resultState.textContent = 'No completado';
         showAnalysisMessage('No fue posible completar el análisis. Inténtalo nuevamente.', 'error');
@@ -216,11 +223,13 @@ analyzeButton.addEventListener('click', () => {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', 'Accept': 'application/json' },
             body: 'codigoRuby=' + encodeURIComponent(codigoRuby)
         }).then((response) => {
+            if (version !== analysisVersion) { return null; }
             if (!response.ok) {
                 throw new Error('Respuesta HTTP no exitosa');
             }
             return response.json();
         }).then((result) => {
+            if (version !== analysisVersion) { return; }
             if (!validSummary(result)) {
                 throw new Error('Resumen JSON inválido');
             }
@@ -394,3 +403,26 @@ function renderDetailedResult() {
         (error) => [field(error, 'message'), line(error), column(error)], 'Sin errores semánticos.');
     applyResultMode();
 }
+clearButton.addEventListener('click', () => {
+    // Invalida callbacks antes de abortar la lectura: ninguna respuesta antigua restaura datos.
+    loadVersion += 1;
+    analysisVersion += 1;
+    if (activeReader && activeReader.readyState === FileReader.LOADING) {
+        activeReader.abort();
+    }
+    activeReader = null;
+    analysisPending = false;
+    dragDepth = 0;
+    dropZone.classList.remove('is-dragging');
+    dropZone.setAttribute('aria-busy', 'false');
+    fileInput.value = '';
+    fileName.textContent = 'Ningún archivo seleccionado';
+    fileInfo.classList.remove('is-loaded');
+    editor.value = '';
+    analysisState.type = 'todo';
+    Array.prototype.forEach.call(analysisOptions, (option) => { option.checked = option.value === 'todo'; });
+    showUploadMessage('', 'idle');
+    codeChanged();
+    [resultValid, resultLexical, resultSyntax, resultSemantic, resultTotal].forEach((node) => { node.textContent = ''; });
+    editor.focus();
+});

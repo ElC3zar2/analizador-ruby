@@ -44,6 +44,14 @@ if ($css -notmatch '@media \(max-width: 640px\)' -or $css -notmatch ':focus-visi
 if ($html -match 'style=|https?://') { throw 'Recursos externos o estilos inline inesperados.' }
 if (!$doc.SelectSingleNode('//*[@id="result-details" and @hidden]')) { throw 'Detalle debe iniciar oculto.' }
 if ($css -notmatch '\.table-scroll' -or $css -notmatch 'overflow: auto' -or $css -notmatch 'overflow-wrap: anywhere') { throw 'Scroll o manejo de lexemas largos ausente.' }
+if ($doc.html.body.InnerText -match 'Fase\s*\d|fase posterior|AnalysisService|Servlet|JSON|endpoint') { throw 'Texto temporal/técnico en interfaz visible.' }
+if (!$doc.SelectSingleNode('//button[@id="clear-button" and @type="button"]')) { throw 'Control Limpiar ausente.' }
+if (!$doc.SelectSingleNode('//a[@href="#main-content"]') -or !$doc.SelectSingleNode('//a[@href="#results-title"]')) { throw 'Navegación de teclado ausente.' }
+foreach ($link in $doc.SelectNodes('//a[starts-with(@href,"#")]')) {
+    if ($link.href.Substring(1) -notin $ids) { throw 'Ancla interna rota.' }
+}
+if (!$doc.SelectSingleNode('//*[@id="results-panel" and @aria-busy="false"]')) { throw 'Estado accesible inicial incorrecto.' }
+if ($css -notmatch 'min-height: 44px' -or $css -notmatch 'repeat\(auto-fit' -or $css -notmatch '\.skip-link:focus') { throw 'Controles táctiles, conteos responsive o foco de salto ausentes.' }
 Write-Output 'PASS: estructura HTML, accesibilidad, recursos, editor editable, responsive y estados de error.'
 Write-Output 'PASS: endpoint relativo, botón inicialmente deshabilitado y resultados sin datos ficticios.'
 $jjsPath = Join-Path $JdkHome 'bin/jjs.exe'

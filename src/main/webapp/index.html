@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="css/styles.css">
     <script src="js/app.js" defer></script>
 </head>
-<body>
+<body id="page-top">
+    <a class="skip-link" href="#main-content">Saltar al contenido</a>
     <div class="app-shell">
         <header class="page-header">
             <div class="brand-mark" aria-hidden="true">◆</div>
@@ -16,9 +17,9 @@
                 <h1>Analizador de Ruby</h1>
                 <p class="subtitle">Análisis léxico, sintáctico y semántico</p>
             </div>
-            <span class="phase-badge">Fase 4 · Resultados detallados</span>
+            <div class="page-actions"><a class="button secondary" href="#results-title">Ir a resultados</a><button class="button secondary" id="clear-button" type="button">Limpiar</button></div>
         </header>
-        <main>
+        <main id="main-content" tabindex="-1">
             <section class="panel upload-panel" aria-labelledby="upload-title">
                 <div class="section-heading">
                     <h2 id="upload-title"><span class="step">01</span> Archivo de origen</h2>
@@ -64,8 +65,8 @@
                 </div>
                 <p class="small" id="analysis-note">Escribe o carga código para analizarlo. Selecciona el tipo para consultar sus resultados.</p>
             </section>
-            <section class="panel results-panel" aria-labelledby="results-title">
-                <div class="section-heading"><h2 id="results-title">Resultados</h2><span class="section-note" id="result-state">Sin análisis</span></div>
+            <section class="panel results-panel" id="results-panel" aria-busy="false" aria-labelledby="results-title">
+                <div class="section-heading"><h2 id="results-title" tabindex="-1">Resultados</h2><span class="section-note" id="result-state">Sin análisis</span></div>
                 <p class="analysis-message" id="analysis-message" role="status" aria-live="polite" aria-atomic="true"></p>
                 <div class="empty-results" id="results-placeholder"><span class="code-symbol" aria-hidden="true">&lt; / &gt;</span><p>Los resultados del análisis aparecerán aquí.</p></div>
                 <div class="analysis-summary" id="analysis-summary" hidden>
@@ -80,7 +81,7 @@
                 <div class="result-details" id="result-details" hidden></div>
             </section>
         </main>
-        <footer class="page-footer">Analizador de Ruby <span>Proyecto de Autómatas y Lenguajes Formales</span></footer>
+        <footer class="page-footer">Analizador de Ruby <span>Proyecto de Autómatas y Lenguajes Formales</span><a href="#page-top">Volver arriba</a></footer>
     </div>
 </body>
 </html>

@@ -34,6 +34,7 @@ function mockElement(tag) {
             var index = this.children.indexOf(child);
             assert(index !== -1, 'Nodo no es hijo'); this.children.splice(index, 1); child.parentNode = null; return child;
         },
+        focus: function() { this.focused = true; },
         click: function() { this.clicks++; }
     };
     Object.defineProperty(node, 'firstChild', { get: function() { return this.children[0] || null; } });
@@ -48,7 +49,7 @@ function mockElement(tag) {
     return node;
 }
 var controls = {};
-['drop-zone', 'source-file', 'select-file', 'source-code', 'file-name', 'file-info', 'upload-message', 'analyze-button', 'analysis-message', 'results-placeholder', 'analysis-summary', 'result-state', 'result-valid', 'result-lexical', 'result-syntax', 'result-semantic', 'result-total', 'result-details'].forEach(function(id) {
+['drop-zone', 'source-file', 'select-file', 'source-code', 'file-name', 'file-info', 'upload-message', 'analyze-button', 'analysis-message', 'results-placeholder', 'analysis-summary', 'result-state', 'result-valid', 'result-lexical', 'result-syntax', 'result-semantic', 'result-total', 'result-details', 'clear-button', 'results-panel'].forEach(function(id) {
     controls[id] = mockElement();
 });
 var radios = ['lexico', 'sintactico', 'semantico', 'todo'].map(function(type) {
@@ -173,6 +174,10 @@ function fetch(url, options) {
 }
 load(root + '/src/main/webapp/js/app.js');
 
+test('Estado inicial sin código ni resultado y con botón deshabilitado', function() {
+    assert(controls['source-code'].value === '' && analysisState.result === null, 'Estado inicial incorrecto');
+    assert(controls['analyze-button'].disabled && controls['results-panel'].attributes['aria-busy'] === 'false', 'Estado inicial ocupado/habilitado');
+});
 test('Botón abre el selector', function() {
     controls['select-file'].handlers.click();
     assert(controls['source-file'].clicks === 1, 'Selector no abierto');
@@ -426,4 +431,5 @@ test('Editar o cargar otro archivo invalida resumen anterior', function() {
     assert(controls['analysis-summary'].hidden && analysisState.result === null, 'Carga conserva resumen viejo');
 });
 load(root + '/tests/frontend/detailed-results.test.js');
+load(root + '/tests/frontend/final-flow.test.js');
 print('TOTAL: ' + passed + ' pruebas frontend aprobadas (DOM, FileReader y fetch simulados; fixtures Java reales).');
