@@ -42,9 +42,12 @@ foreach ($match in [regex]::Matches($js, 'getElementById\(''([^'']+)''\)')) {
 $css = Get-Content -LiteralPath (Join-Path $projectRoot 'src/main/webapp/css/styles.css') -Raw -Encoding utf8
 if ($css -notmatch '@media \(max-width: 640px\)' -or $css -notmatch ':focus-visible' -or $css -notmatch 'upload-message\[data-state="error"\]') { throw 'Estilos responsive, focus o error ausentes.' }
 if ($html -match 'style=|https?://') { throw 'Recursos externos o estilos inline inesperados.' }
+if (!$doc.SelectSingleNode('//*[@id="result-details" and @hidden]')) { throw 'Detalle debe iniciar oculto.' }
+if ($css -notmatch '\.table-scroll' -or $css -notmatch 'overflow: auto' -or $css -notmatch 'overflow-wrap: anywhere') { throw 'Scroll o manejo de lexemas largos ausente.' }
 Write-Output 'PASS: estructura HTML, accesibilidad, recursos, editor editable, responsive y estados de error.'
 Write-Output 'PASS: endpoint relativo, botón inicialmente deshabilitado y resultados sin datos ficticios.'
 $jjsPath = Join-Path $JdkHome 'bin/jjs.exe'
 if (!(Test-Path -LiteralPath $jjsPath)) { throw "No se encontró jjs de Java 11: $jjsPath" }
-& $jjsPath -scripting --language=es6 (Join-Path $PSScriptRoot 'file-loading.test.js') -- $projectRoot
+if (!(Test-Path -LiteralPath (Join-Path $projectRoot 'target/classes/com/umg/analizador/web/AnalysisJson.class'))) { throw 'Primero compila el proyecto con el Maven existente: se requieren target/classes para las respuestas reales.' }
+& $jjsPath -cp (Join-Path $projectRoot 'target/classes') -scripting --language=es6 (Join-Path $PSScriptRoot 'file-loading.test.js') -- $projectRoot
 if ($LASTEXITCODE -ne 0) { throw "Pruebas de comportamiento fallidas: código $LASTEXITCODE" }

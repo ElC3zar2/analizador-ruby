@@ -16,10 +16,12 @@ function test(name, callback) {
     passed++;
     print('PASS: ' + name);
 }
-function mockElement() {
+function mockElement(tag) {
     var classes = {};
-    return {
-        value: '', textContent: '', files: [], attributes: {}, handlers: {}, clicks: 0,
+    var text = '';
+    var node = {
+        tagName: (tag || 'div').toUpperCase(), children: [],
+        value: '', files: [], attributes: {}, handlers: {}, clicks: 0,
         classList: {
             add: function(name) { classes[name] = true; },
             remove: function(name) { delete classes[name]; },
@@ -27,17 +29,33 @@ function mockElement() {
         },
         setAttribute: function(name, value) { this.attributes[name] = value; },
         addEventListener: function(name, callback) { this.handlers[name] = callback; },
+        appendChild: function(child) { this.children.push(child); child.parentNode = this; return child; },
+        removeChild: function(child) {
+            var index = this.children.indexOf(child);
+            assert(index !== -1, 'Nodo no es hijo'); this.children.splice(index, 1); child.parentNode = null; return child;
+        },
         click: function() { this.clicks++; }
     };
+    Object.defineProperty(node, 'firstChild', { get: function() { return this.children[0] || null; } });
+    Object.defineProperty(node, 'textContent', {
+        get: function() { return this.children.length ? this.children.map(function(child) { return child.textContent; }).join('') : text; },
+        set: function(value) { text = String(value); this.children = []; }
+    });
+    Object.defineProperty(node, 'innerHTML', {
+        get: function() { return undefined; },
+        set: function() { throw new Error('No se permite interpretar HTML de resultados'); }
+    });
+    return node;
 }
 var controls = {};
-['drop-zone', 'source-file', 'select-file', 'source-code', 'file-name', 'file-info', 'upload-message', 'analyze-button', 'analysis-message', 'results-placeholder', 'analysis-summary', 'result-state', 'result-valid', 'result-lexical', 'result-syntax', 'result-semantic', 'result-total'].forEach(function(id) {
+['drop-zone', 'source-file', 'select-file', 'source-code', 'file-name', 'file-info', 'upload-message', 'analyze-button', 'analysis-message', 'results-placeholder', 'analysis-summary', 'result-state', 'result-valid', 'result-lexical', 'result-syntax', 'result-semantic', 'result-total', 'result-details'].forEach(function(id) {
     controls[id] = mockElement();
 });
 var radios = ['lexico', 'sintactico', 'semantico', 'todo'].map(function(type) {
     var option = mockElement(); option.value = type; option.checked = type === 'todo'; return option;
 });
 var document = {
+    createElement: function(tag) { return mockElement(tag); },
     querySelectorAll: function(selector) {
         assert(selector === 'input[name="analysis-type"]', 'Selector inesperado');
         return radios;
@@ -407,4 +425,5 @@ test('Editar o cargar otro archivo invalida resumen anterior', function() {
     select([file('nuevo.rb', 'puts 3')]); latestReader().complete();
     assert(controls['analysis-summary'].hidden && analysisState.result === null, 'Carga conserva resumen viejo');
 });
-print('TOTAL: ' + passed + ' pruebas frontend aprobadas (DOM, FileReader y fetch simulados).');
+load(root + '/tests/frontend/detailed-results.test.js');
+print('TOTAL: ' + passed + ' pruebas frontend aprobadas (DOM, FileReader y fetch simulados; fixtures Java reales).');

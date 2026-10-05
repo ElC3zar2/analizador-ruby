@@ -130,6 +130,8 @@ const resultLexical = document.getElementById('result-lexical');
 const resultSyntax = document.getElementById('result-syntax');
 const resultSemantic = document.getElementById('result-semantic');
 const resultTotal = document.getElementById('result-total');
+const resultDetails = document.getElementById('result-details');
+const detailSections = {};
 const analysisOptions = document.querySelectorAll('input[name="analysis-type"]');
 // Conserva JSON completo y el código al que corresponde para la futura vista detallada.
 const analysisState = { result: null, code: null, type: 'todo' };
@@ -149,6 +151,7 @@ function codeChanged() {
     analysisState.result = null;
     analysisState.code = null;
     analysisSummary.hidden = true;
+    clearDetails();
     resultsPlaceholder.hidden = false;
     resultState.textContent = 'Sin análisis';
     showAnalysisMessage(analysisPending ? 'El código cambió. Vuelve a analizarlo al terminar.' : '', 'idle');
@@ -172,6 +175,7 @@ Array.prototype.forEach.call(analysisOptions, (option) => {
     option.addEventListener('change', () => {
         if (option.checked) {
             analysisState.type = option.value;
+            applyResultMode();
         }
     });
 });
@@ -185,6 +189,7 @@ analyzeButton.addEventListener('click', () => {
     analysisState.result = null;
     analysisState.code = null;
     analysisSummary.hidden = true;
+    clearDetails();
     resultsPlaceholder.hidden = true;
     resultState.textContent = 'En curso';
     showAnalysisMessage('Analizando…', 'loading');
@@ -198,6 +203,7 @@ analyzeButton.addEventListener('click', () => {
         analysisState.result = null;
         analysisState.code = null;
         analysisSummary.hidden = true;
+    clearDetails();
         resultsPlaceholder.hidden = true;
         resultState.textContent = 'No completado';
         showAnalysisMessage('No fue posible completar el análisis. Inténtalo nuevamente.', 'error');
@@ -232,6 +238,7 @@ analyzeButton.addEventListener('click', () => {
             resultTotal.textContent = String(result.totalErrorCount);
             resultState.textContent = result.valid ? 'Válido' : 'Con errores';
             analysisSummary.hidden = false;
+            renderDetailedResult();
             showAnalysisMessage('Análisis completado', 'success');
         }).catch(analysisFailed).then(finishAnalysis);
     } catch (error) {
@@ -242,3 +249,148 @@ analyzeButton.addEventListener('click', () => {
 });
 
 updateAnalyzeButton();
+function clearDetails() {
+    resultDetails.hidden = true;
+    while (resultDetails.firstChild) {
+        resultDetails.removeChild(resultDetails.firstChild);
+    }
+    Object.keys(detailSections).forEach((key) => { delete detailSections[key]; });
+}
+
+function applyResultMode() {
+    const current = analysisState.result && analysisState.code === editor.value;
+    resultDetails.hidden = !current;
+    Object.keys(detailSections).forEach((key) => {
+        detailSections[key].hidden = !current || (analysisState.type !== 'todo' && analysisState.type !== key);
+    });
+}
+
+function textNode(tag, text, className) {
+    const node = document.createElement(tag);
+    if (text !== undefined && text !== null) {
+        node.textContent = String(text);
+    }
+    if (className) {
+        node.className = className;
+    }
+    return node;
+}
+
+// Cambia únicamente la etiqueta visual, no los datos del resultado.
+function visibleText(value) {
+    if (value === undefined || value === null) {
+        return '—';
+    }
+    if (value === '') {
+        return '[vacío]';
+    }
+    return String(value).replace(/ /g, '[espacio]').replace(/\t/g, '\\t')
+        .replace(/\n/g, '\\n').replace(/\r/g, '\\r')
+        .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, (character) => {
+            return '\\u' + ('0000' + character.charCodeAt(0).toString(16)).slice(-4);
+        });
+}
+
+function field(item, key) {
+    return item && item[key] !== undefined && item[key] !== null ? item[key] : '—';
+}
+function line(item) { return field(item && item.position, 'line'); }
+function column(item) { return field(item && item.position, 'column'); }
+
+function detailSection(mode, title) {
+    const section = textNode('section', null, 'detail-section');
+    const heading = textNode('h3', title);
+    heading.id = 'detail-' + mode + '-title';
+    section.setAttribute('aria-labelledby', heading.id);
+    section.appendChild(heading);
+    detailSections[mode] = section;
+    resultDetails.appendChild(section);
+    return section;
+}
+
+function renderTable(parent, title, headings, items, rowValues, emptyMessage) {
+    if (!Array.isArray(items)) {
+        parent.appendChild(textNode('p', 'Detalle no disponible: ' + title + '.', 'detail-empty'));
+        return;
+    }
+    if (items.length === 0) {
+        parent.appendChild(textNode('p', emptyMessage, 'detail-empty'));
+        return;
+    }
+    const viewport = textNode('div', null, 'table-scroll');
+    viewport.tabIndex = 0;
+    viewport.setAttribute('role', 'region');
+    viewport.setAttribute('aria-label', title);
+    const table = textNode('table', null, 'result-table');
+    table.appendChild(textNode('caption', title));
+    const head = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    headings.forEach((label) => {
+        const cell = textNode('th', label);
+        cell.setAttribute('scope', 'col');
+        headerRow.appendChild(cell);
+    });
+    head.appendChild(headerRow);
+    table.appendChild(head);
+    const body = document.createElement('tbody');
+    items.forEach((item) => {
+        const row = document.createElement('tr');
+        rowValues(item).forEach((value) => { row.appendChild(textNode('td', value)); });
+        body.appendChild(row);
+    });
+    table.appendChild(body);
+    viewport.appendChild(table);
+    parent.appendChild(viewport);
+}
+
+function collapsible(parent, title) {
+    const details = document.createElement('details');
+    details.appendChild(textNode('summary', title));
+    parent.appendChild(details);
+    return details;
+}
+
+function renderDetailedResult() {
+    clearDetails();
+    const result = analysisState.result;
+    if (!result || analysisState.code !== editor.value) {
+        return;
+    }
+    const lexical = detailSection('lexico', 'Análisis léxico');
+    renderTable(lexical, 'Tokens', ['Lexema', 'Token', 'Línea', 'Columna'], result.tokens,
+        (token) => [visibleText(token && token.lexeme), field(token, 'type'), line(token), column(token)],
+        'No se generaron tokens.');
+    renderTable(lexical, 'Errores léxicos', ['Mensaje', 'Lexema', 'Línea', 'Columna'], result.lexicalErrors,
+        (error) => [field(error, 'message'), visibleText(error && error.lexeme), line(error), column(error)],
+        'Sin errores léxicos.');
+    const alphabet = collapsible(lexical, 'Alfabeto');
+    if (!Array.isArray(result.alphabet)) {
+        alphabet.appendChild(textNode('p', 'Detalle no disponible: alfabeto.', 'detail-empty'));
+    } else if (result.alphabet.length === 0) {
+        alphabet.appendChild(textNode('p', 'No se generaron elementos del alfabeto.', 'detail-empty'));
+    } else {
+        const chips = textNode('ul', null, 'alphabet-chips');
+        result.alphabet.forEach((value) => { chips.appendChild(textNode('li', visibleText(value))); });
+        alphabet.appendChild(chips);
+    }
+    const symbols = collapsible(lexical, 'Símbolos léxicos');
+    renderTable(symbols, 'Símbolos léxicos', ['Símbolo', 'Línea', 'Columna'], result.lexicalSymbols,
+        (symbol) => [visibleText(symbol && symbol.value), line(symbol), column(symbol)],
+        'No se generaron símbolos léxicos.');
+
+    const syntax = detailSection('sintactico', 'Análisis sintáctico');
+    syntax.appendChild(textNode('p', 'Estado sintáctico: ' + (result.syntaxErrorCount === 0 ? 'Correcto' : 'Con errores'), 'syntax-state'));
+    renderTable(syntax, 'Errores sintácticos', ['Mensaje', 'Token', 'Lexema', 'Línea', 'Columna'], result.syntaxErrors,
+        (error) => {
+            const token = error && error.token;
+            return [field(error, 'message'), field(token, 'type'), visibleText(token && token.lexeme), line(token), column(token)];
+        }, 'Sin errores sintácticos.');
+
+    const semantic = detailSection('semantico', 'Análisis semántico');
+    renderTable(semantic, 'Símbolos semánticos', ['Nombre', 'Tipo de símbolo', 'Tipo inferido', 'Ámbito', 'Línea', 'Columna', 'Aridad'], result.semanticSymbols,
+        (symbol) => [field(symbol, 'name'), field(symbol, 'kind'), field(symbol, 'type'), field(symbol, 'scope'), line(symbol), column(symbol), field(symbol, 'arity')],
+        'No se generaron símbolos semánticos.');
+    renderTable(semantic, 'Errores semánticos', ['Mensaje', 'Línea', 'Columna'], result.semanticErrors,
+        (error) => [field(error, 'message'), line(error), column(error)], 'Sin errores semánticos.');
+    applyResultMode();
+}

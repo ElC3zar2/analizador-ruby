@@ -16,7 +16,7 @@
                 <h1>Analizador de Ruby</h1>
                 <p class="subtitle">Análisis léxico, sintáctico y semántico</p>
             </div>
-            <span class="phase-badge">Fase 3 · Integración web</span>
+            <span class="phase-badge">Fase 4 · Resultados detallados</span>
         </header>
         <main>
             <section class="panel upload-panel" aria-labelledby="upload-title">
@@ -62,7 +62,7 @@
                     </fieldset>
                     <button class="button primary" id="analyze-button" type="button" disabled aria-describedby="analysis-note">Analizar</button>
                 </div>
-                <p class="small" id="analysis-note">Escribe o carga código para analizarlo. El tipo seleccionado se usará para la vista detallada.</p>
+                <p class="small" id="analysis-note">Escribe o carga código para analizarlo. Selecciona el tipo para consultar sus resultados.</p>
             </section>
             <section class="panel results-panel" aria-labelledby="results-title">
                 <div class="section-heading"><h2 id="results-title">Resultados</h2><span class="section-note" id="result-state">Sin análisis</span></div>
@@ -77,6 +77,7 @@
                         <div><dt>Total</dt><dd id="result-total"></dd></div>
                     </dl>
                 </div>
+                <div class="result-details" id="result-details" hidden></div>
             </section>
         </main>
         <footer class="page-footer">Analizador de Ruby <span>Proyecto de Autómatas y Lenguajes Formales</span></footer>
