@@ -240,12 +240,6 @@ analyzeButton.addEventListener('click', () => {
                 showAnalysisMessage('El código cambió durante el análisis. Vuelve a analizarlo.', 'idle');
                 return;
             }
-            resultValid.textContent = result.valid ? 'Válido' : 'Con errores';
-            resultLexical.textContent = String(result.lexicalErrorCount);
-            resultSyntax.textContent = String(result.syntaxErrorCount);
-            resultSemantic.textContent = String(result.semanticErrorCount);
-            resultTotal.textContent = String(result.totalErrorCount);
-            resultState.textContent = result.valid ? 'Válido' : 'Con errores';
             analysisSummary.hidden = false;
             renderDetailedResult();
             showAnalysisMessage('Análisis completado', 'success');
@@ -266,7 +260,40 @@ function clearDetails() {
     Object.keys(detailSections).forEach((key) => { delete detailSections[key]; });
 }
 
+function getVisibleStatus(result, type) {
+    switch (type) {
+        case 'lexico':
+            return result.lexicalErrorCount === 0 ? 'Válido' : 'Con errores';
+        case 'sintactico':
+            return result.syntaxErrorCount === 0 ? 'Válido' : 'Con errores';
+        case 'semantico':
+            if (result.lexicalErrorCount > 0 || result.syntaxErrorCount > 0) {
+                return 'No evaluado por errores previos';
+            }
+            return result.semanticErrorCount === 0 ? 'Válido' : 'Con errores';
+        case 'todo':
+        default:
+            return result.valid === true ? 'Válido' : 'Con errores';
+    }
+}
+
+function updateVisibleSummary() {
+    const result = analysisState.result;
+    if (!result || analysisState.code !== editor.value) {
+        return;
+    }
+    const contexts = { lexico: 'Léxico', sintactico: 'Sintáctico', semantico: 'Semántico', todo: 'General' };
+    const status = getVisibleStatus(result, analysisState.type);
+    resultValid.textContent = status;
+    resultState.textContent = (contexts[analysisState.type] || contexts.todo) + ': ' + status;
+    resultLexical.textContent = String(result.lexicalErrorCount);
+    resultSyntax.textContent = String(result.syntaxErrorCount);
+    resultSemantic.textContent = String(result.semanticErrorCount);
+    resultTotal.textContent = String(result.totalErrorCount);
+}
+
 function applyResultMode() {
+    updateVisibleSummary();
     const current = analysisState.result && analysisState.code === editor.value;
     resultDetails.hidden = !current;
     Object.keys(detailSections).forEach((key) => {
@@ -396,11 +423,13 @@ function renderDetailedResult() {
         }, 'Sin errores sintácticos.');
 
     const semantic = detailSection('semantico', 'Análisis semántico');
+    const semanticStatus = getVisibleStatus(result, 'semantico');
+    semantic.appendChild(textNode('p', 'Estado semántico: ' + semanticStatus, 'syntax-state'));
     renderTable(semantic, 'Símbolos semánticos', ['Nombre', 'Tipo de símbolo', 'Tipo inferido', 'Ámbito', 'Línea', 'Columna', 'Aridad'], result.semanticSymbols,
         (symbol) => [field(symbol, 'name'), field(symbol, 'kind'), field(symbol, 'type'), field(symbol, 'scope'), line(symbol), column(symbol), field(symbol, 'arity')],
         'No se generaron símbolos semánticos.');
     renderTable(semantic, 'Errores semánticos', ['Mensaje', 'Línea', 'Columna'], result.semanticErrors,
-        (error) => [field(error, 'message'), line(error), column(error)], 'Sin errores semánticos.');
+        (error) => [field(error, 'message'), line(error), column(error)], semanticStatus === 'No evaluado por errores previos' ? 'No hay diagnósticos semánticos que mostrar.' : 'Sin errores semánticos.');
     applyResultMode();
 }
 clearButton.addEventListener('click', () => {

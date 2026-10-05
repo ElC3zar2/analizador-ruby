@@ -164,3 +164,78 @@ test('Contenedores de tablas son enfocables y tienen encabezados accesibles', fu
         assert(rows(detailSections.lexico, 'Símbolos léxicos').length === result.lexicalSymbols.length, 'Símbolos léxicos perdidos');
     });
 });
+
+function assertModeStatus(type, expected) {
+    mode(type);
+    var labels = { lexico: 'Léxico', sintactico: 'Sintáctico', semantico: 'Semántico', todo: 'General' };
+    assert(controls['result-valid'].textContent === expected, 'Estado incorrecto en ' + type);
+    assert(controls['result-state'].textContent === labels[type] + ': ' + expected, 'Contexto incorrecto en ' + type);
+    ['lexico', 'sintactico', 'semantico'].forEach(function(key) {
+        assert(detailSections[key].hidden === (type !== 'todo' && type !== key), 'Cambio de estado rompe visibilidad');
+    });
+}
+function assertStoredResultUnchanged(count, stored, snapshot) {
+    assert(requests.length === count && analysisState.result === stored, 'Cambio de modo genera fetch o reemplaza resultado');
+    assert(JSON.stringify(stored) === snapshot, 'Cambio de modo altera JSON');
+    assert(controls['result-total'].textContent === String(stored.totalErrorCount), 'Total dejó de ser global');
+}
+test('Solo error semántico: una respuesta y estados distintos por modo', function() {
+    var code = 'edad = 20\n\nputs edad\nputs nombre';
+    var result = realResult(code); var before = requests.length;
+    assert(result.lexicalErrorCount === 0 && result.syntaxErrorCount === 0 && result.semanticErrorCount === 1 && result.totalErrorCount === 1 && result.valid === false, 'Fixture principal no coincide');
+    mode('lexico'); showResult(result, code);
+    assert(controls['result-valid'].textContent === 'Válido', 'Respuesta inicial usa validez global');
+    assert(requests.length === before + 1, 'Más de una petición inicial');
+    var count = requests.length; var stored = analysisState.result; var snapshot = JSON.stringify(stored);
+    assertModeStatus('lexico', 'Válido'); assertModeStatus('sintactico', 'Válido');
+    assertModeStatus('semantico', 'Con errores'); assertModeStatus('todo', 'Con errores');
+    assertStoredResultUnchanged(count, stored, snapshot);
+});
+test('Error sintáctico: semántica no evaluada y léxico válido', function() {
+    var code = 'edad = 20\n\nif edad >= 18\n    puts "Mayor"'; var result = realResult(code);
+    assert(result.lexicalErrorCount === 0 && result.syntaxErrorCount > 0, 'Fixture no tiene error sintáctico');
+    showResult(result, code); var count = requests.length; var snapshot = JSON.stringify(result);
+    assertModeStatus('lexico', 'Válido'); assertModeStatus('sintactico', 'Con errores');
+    assertModeStatus('semantico', 'No evaluado por errores previos'); assertModeStatus('todo', 'Con errores');
+    assert(detailSections.semantico.textContent.indexOf('No evaluado por errores previos') !== -1, 'Detalle semántico no explica bloqueo');
+    assert(detailSections.semantico.textContent.indexOf('Sin errores semánticos.') === -1, 'Semántica bloqueada se presenta como validada');
+    assertStoredResultUnchanged(count, result, snapshot);
+});
+test('Error léxico: sintáctico usa su propio conteo y semántica no evaluada', function() {
+    var code = 'edad = 20 ?'; var result = realResult(code); assert(result.lexicalErrorCount > 0, 'Fixture sin error léxico');
+    showResult(result, code); var count = requests.length; var snapshot = JSON.stringify(result);
+    assertModeStatus('lexico', 'Con errores');
+    assertModeStatus('sintactico', result.syntaxErrorCount === 0 ? 'Válido' : 'Con errores');
+    assertModeStatus('semantico', 'No evaluado por errores previos'); assertModeStatus('todo', 'Con errores');
+    assert(detailSections.semantico.textContent.indexOf('Sin errores semánticos.') === -1, 'Error léxico valida semántica');
+    assertStoredResultUnchanged(count, result, snapshot);
+});
+test('Programa completamente válido muestra Válido en todos los modos', function() {
+    var code = 'edad = 20\nputs edad'; var result = realResult(code); assert(result.valid, 'Fixture no válido');
+    showResult(result, code); var count = requests.length; var snapshot = JSON.stringify(result);
+    ['lexico', 'sintactico', 'semantico', 'todo'].forEach(function(type) { assertModeStatus(type, 'Válido'); });
+    assert(detailSections.semantico.textContent.indexOf('Sin errores semánticos.') !== -1, 'Mensaje positivo se perdió para semántica evaluada');
+    assertStoredResultUnchanged(count, result, snapshot);
+});
+test('Todo usa result.valid directamente, incluso sin inferirlo de conteos', function() {
+    // Contratos deliberadamente discordantes, solo para probar la función pura.
+    var discordant = emptyResult(); discordant.valid = false;
+    assert(getVisibleStatus(discordant, 'todo') === 'Con errores', 'Todo infiere validez de conteos');
+    discordant.valid = true; discordant.lexicalErrorCount = 1;
+    assert(getVisibleStatus(discordant, 'todo') === 'Válido', 'Todo ignora result.valid');
+    assert(getVisibleStatus(discordant, 'lexico') === 'Con errores', 'Léxico usa result.valid');
+    assert(getVisibleStatus(discordant, 'sintactico') === 'Válido', 'Sintáctico usa validez ajena');
+    assert(getVisibleStatus(discordant, 'semantico') === 'No evaluado por errores previos', 'Semántico ignora errores previos');
+});
+test('Cambiar tipo mientras espera respuesta usa el último modo elegido', function() {
+    var code = 'puts nombre'; mode('todo'); edit(code); analyzeClick(); var count = requests.length;
+    mode('lexico'); respond(realResult(code));
+    assert(controls['result-state'].textContent === 'Léxico: Válido' && controls['result-valid'].textContent === 'Válido', 'Respuesta ignora tipo actual');
+    assert(requests.length === count, 'Cambio durante carga genera petición');
+});
+test('Editar impide restaurar estado anterior mediante cambio de radio', function() {
+    edit('nuevo código'); var count = requests.length;
+    mode('semantico'); mode('todo');
+    assert(analysisState.result === null && controls['result-state'].textContent === 'Sin análisis' && controls['analysis-summary'].hidden, 'Cambio de modo restaura estado viejo');
+    assert(requests.length === count, 'Radio sin resultado genera fetch');
+});
