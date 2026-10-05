@@ -16,7 +16,7 @@
                 <h1>Analizador de Ruby</h1>
                 <p class="subtitle">Análisis léxico, sintáctico y semántico</p>
             </div>
-            <span class="phase-badge">Fase 2 · Carga de archivos</span>
+            <span class="phase-badge">Fase 3 · Integración web</span>
         </header>
         <main>
             <section class="panel upload-panel" aria-labelledby="upload-title">
@@ -60,13 +60,23 @@
                             <label class="option"><input type="radio" name="analysis-type" value="todo" checked><span>Todo</span></label>
                         </div>
                     </fieldset>
-                    <button class="button primary" type="button" disabled aria-describedby="analysis-note">Analizar <span aria-hidden="true">→</span></button>
+                    <button class="button primary" id="analyze-button" type="button" disabled aria-describedby="analysis-note">Analizar</button>
                 </div>
-                <p class="small" id="analysis-note">El análisis estará disponible cuando se active la integración con el backend.</p>
+                <p class="small" id="analysis-note">Escribe o carga código para analizarlo. El tipo seleccionado se usará para la vista detallada.</p>
             </section>
             <section class="panel results-panel" aria-labelledby="results-title">
-                <div class="section-heading"><h2 id="results-title">Resultados</h2><span class="section-note">Sin análisis</span></div>
-                <div class="empty-results"><span class="code-symbol" aria-hidden="true">&lt; / &gt;</span><p>Los resultados del análisis aparecerán aquí.</p></div>
+                <div class="section-heading"><h2 id="results-title">Resultados</h2><span class="section-note" id="result-state">Sin análisis</span></div>
+                <p class="analysis-message" id="analysis-message" role="status" aria-live="polite" aria-atomic="true"></p>
+                <div class="empty-results" id="results-placeholder"><span class="code-symbol" aria-hidden="true">&lt; / &gt;</span><p>Los resultados del análisis aparecerán aquí.</p></div>
+                <div class="analysis-summary" id="analysis-summary" hidden>
+                    <p>Estado: <strong id="result-valid"></strong></p>
+                    <dl class="error-counts">
+                        <div><dt>Léxicos</dt><dd id="result-lexical"></dd></div>
+                        <div><dt>Sintácticos</dt><dd id="result-syntax"></dd></div>
+                        <div><dt>Semánticos</dt><dd id="result-semantic"></dd></div>
+                        <div><dt>Total</dt><dd id="result-total"></dd></div>
+                    </dl>
+                </div>
             </section>
         </main>
         <footer class="page-footer">Analizador de Ruby <span>Proyecto de Autómatas y Lenguajes Formales</span></footer>
