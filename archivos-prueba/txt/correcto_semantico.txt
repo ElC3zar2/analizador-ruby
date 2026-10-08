@@ -1,0 +1,5 @@
+nombre = "Gabriel"
+edad = 20
+
+puts nombre
+puts edad

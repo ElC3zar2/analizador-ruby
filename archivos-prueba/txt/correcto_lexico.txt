@@ -1,0 +1,3 @@
+nombre = "Ruby"
+edad = 20
+puts nombre

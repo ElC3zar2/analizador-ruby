@@ -1,0 +1,4 @@
+edad = 20
+
+puts edad
+puts nombre

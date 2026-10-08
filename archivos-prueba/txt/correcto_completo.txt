@@ -1,0 +1,9 @@
+x = 10
+y = 20
+resultado = x + y
+
+if resultado > 20
+    puts "Resultado alto"
+else
+    puts "Resultado bajo"
+end
