@@ -327,6 +327,15 @@ function visibleText(value) {
         });
 }
 
+function visibleTokenType(type) {
+    const reservedWords = [
+        'IF', 'ELSIF', 'ELSE', 'END', 'WHILE', 'FOR', 'IN', 'DO',
+        'DEF', 'RETURN', 'BREAK', 'NEXT', 'TRUE', 'FALSE', 'NIL', 'PUTS',
+        'AND', 'OR', 'NOT'
+    ];
+    return reservedWords.indexOf(type) !== -1 ? 'Palabra Reservada' : type;
+}
+
 function field(item, key) {
     return item && item[key] !== undefined && item[key] !== null ? item[key] : '—';
 }
@@ -394,7 +403,7 @@ function renderDetailedResult() {
     }
     const lexical = detailSection('lexico', 'Análisis léxico');
     renderTable(lexical, 'Tokens', ['Lexema', 'Token', 'Línea', 'Columna'], result.tokens,
-        (token) => [visibleText(token && token.lexeme), field(token, 'type'), line(token), column(token)],
+        (token) => [visibleText(token && token.lexeme), visibleTokenType(field(token, 'type')), line(token), column(token)],
         'No se generaron tokens.');
     renderTable(lexical, 'Errores léxicos', ['Mensaje', 'Lexema', 'Línea', 'Columna'], result.lexicalErrors,
         (error) => [field(error, 'message'), visibleText(error && error.lexeme), line(error), column(error)],

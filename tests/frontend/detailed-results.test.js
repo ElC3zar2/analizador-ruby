@@ -46,14 +46,49 @@ test('Cambiar modo reutiliza nodos y resultado sin fetch adicional', function() 
     ['lexico', 'sintactico', 'semantico', 'todo'].forEach(mode);
     assert(requests.length === count && analysisState.result === stored && detailSections.lexico === lexical, 'Modo repite petición/render o reemplaza resultado');
 });
-test('Tokens conservan orden, lexema, enum, posición y EOF', function() {
-    var code = 'x = 1\nputs x'; var result = realResult(code); showResult(result, code);
+test('Tokens conservan orden, lexema, posición, EOF y enums originales', function() {
+    var code = 'x = 1\nputs x'; var result = realResult(code); var original = JSON.stringify(result); showResult(result, code);
     var rendered = rows(detailSections.lexico, 'Tokens');
     assert(rendered.length === result.tokens.length, 'Tokens eliminados');
     result.tokens.forEach(function(token, index) {
-        assert(JSON.stringify(rendered[index]) === JSON.stringify([visibleText(token.lexeme), token.type, String(token.position.line), String(token.position.column)]), 'Token mal mapeado');
+        var expectedType = token.type === 'PUTS' ? 'Palabra Reservada' : token.type;
+        assert(JSON.stringify(rendered[index]) === JSON.stringify([visibleText(token.lexeme), expectedType, String(token.position.line), String(token.position.column)]), 'Token mal mapeado');
     });
     assert(rendered[rendered.length - 1][1] === 'EOF', 'EOF eliminado');
+    assert(analysisState.result === result && JSON.stringify(result) === original, 'Resultado original alterado');
+});
+
+test('Condicional real muestra palabras reservadas sin alterar STRING ni enums del JSON', function() {
+    var code = 'if true\n    puts "ok"\nelse\n    puts "no"\nend';
+    var result = realResult(code); var original = JSON.stringify(result); showResult(result, code);
+    var rendered = rows(detailSections.lexico, 'Tokens');
+    var expected = [['if', 'IF'], ['true', 'TRUE'], ['puts', 'PUTS'], ['"ok"', 'STRING'],
+        ['else', 'ELSE'], ['puts', 'PUTS'], ['"no"', 'STRING'], ['end', 'END']];
+    var index = 0;
+    result.tokens.forEach(function(token, rowIndex) {
+        if (token.type === 'NEWLINE' || token.type === 'EOF') return;
+        assert(index < expected.length, 'Token inesperado');
+        var entry = expected[index++];
+        assert(token.lexeme === entry[0] && token.type === entry[1], 'Enum/lexema original incorrecto');
+        assert(rendered[rowIndex][0] === entry[0] && rendered[rowIndex][1] === (entry[1] === 'STRING' ? 'STRING' : 'Palabra Reservada'), 'Etiqueta visual incorrecta');
+    });
+    assert(index === expected.length, 'Faltan tokens esperados');
+    assert(analysisState.result === result && JSON.stringify(result) === original, 'JSON original alterado');
+});
+
+test('Las 19 palabras reservadas cambian solo su etiqueta y otros tipos se conservan', function() {
+    var reserved = ['IF', 'ELSIF', 'ELSE', 'END', 'WHILE', 'FOR', 'IN', 'DO', 'DEF',
+        'RETURN', 'BREAK', 'NEXT', 'TRUE', 'FALSE', 'NIL', 'PUTS', 'AND', 'OR', 'NOT'];
+    var others = ['IDENTIFIER', 'INTEGER', 'FLOAT', 'STRING', 'ASSIGN', 'GREATER_EQUAL', 'PLUS', 'EOF', 'UNKNOWN'];
+    var result = emptyResult();
+    result.tokens = reserved.concat(others).map(function(type, index) {
+        return { type: type, lexeme: type.toLowerCase(), position: { line: 1, column: index + 1 } };
+    });
+    var original = JSON.stringify(result); showResult(result);
+    rows(detailSections.lexico, 'Tokens').forEach(function(row, index) {
+        assert(row[1] === (index < reserved.length ? 'Palabra Reservada' : others[index - reserved.length]), 'Etiqueta incorrecta: ' + result.tokens[index].type);
+    });
+    assert(analysisState.result === result && JSON.stringify(result) === original, 'Resultado original alterado');
 });
 test('Error léxico real muestra mensaje, lexema y posición', function() {
     var result = realResult('x = 10 ?'); showResult(result, 'x = 10 ?');
